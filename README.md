@@ -75,12 +75,51 @@ security_app/
 
 ## 🔐 Sécurité
 
-- **Hachage des mots de passe** : Utilisation de bcrypt
+- **Hachage des mots de passe** : Utilisation de bcrypt avec salt automatique
 - **Protection CSRF** : Sessions Flask sécurisées
 - **Rate limiting** : Limitation des requêtes par IP
 - **Détection d'injections** : Détection automatique des tentatives SQL injection
 - **Audit logging** : Tous les événements sont journalisés dans `logs/audit.log`
 - **Blocage après échecs** : Blocage après 5 tentatives de connexion échouées
+
+### Hachage des mots de passe
+
+Les mots de passe sont hachés avec **bcrypt** :
+- Génération automatique d'un salt unique pour chaque mot de passe
+- Algorithme : bcrypt (coût par défaut)
+- Format : `$2b$[cost]$[salt][hash]`
+- Les mots de passe en clair ne sont jamais stockés en base de données
+
+### Validations des inputs
+
+#### Nom d'utilisateur (`username`)
+- **Format** : Alphanumérique uniquement (lettres et chiffres)
+- **Longueur** : Entre 3 et 20 caractères
+- **Pattern** : `^[A-Za-z0-9]{3,20}$`
+- **Exemples valides** : `user123`, `admin`, `testuser`
+- **Exemples invalides** : `user_123` (underscore non autorisé), `ab` (trop court), `user@name` (caractères spéciaux non autorisés)
+
+#### Email
+- **Format** : Format email standard RFC
+- **Pattern** : `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+- **Exemples valides** : `user@example.com`, `test.user@domain.co.uk`
+- **Exemples invalides** : `invalid.email`, `user@`, `@domain.com`
+
+#### Mot de passe (`password`)
+- **Longueur** : Entre 8 et 20 caractères
+- **Exigences** :
+  - Au moins une lettre minuscule (`a-z`)
+  - Au moins une lettre majuscule (`A-Z`)
+  - Au moins un chiffre (`0-9`)
+  - Au moins un caractère spécial parmi : `@$!%*?&`
+- **Pattern** : `^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,20}$`
+- **Confirmation** : Le mot de passe et sa confirmation doivent être identiques
+- **Exemples valides** : `Password123!`, `MyP@ssw0rd`
+- **Exemples invalides** : `password` (pas de majuscule/chiffre/caractère spécial), `PASSWORD123` (pas de minuscule/caractère spécial), `Pass1` (trop court)
+
+#### Sanitization
+- Tous les inputs sont sanitizés avec `markupsafe.escape()` pour prévenir les attaques XSS
+- Les caractères HTML spéciaux sont échappés avant stockage
 
 ## 🎨 Interface
 
@@ -106,6 +145,68 @@ Les logs sont enregistrés dans `logs/audit.log` au format JSON et incluent :
 - Accès refusés
 - Erreurs de base de données
 - Visites de routes
+
+### Voir les logs dans Docker
+
+#### Logs de l'application Flask
+```bash
+# Voir les logs du conteneur web
+docker logs flask_app
+
+# Suivre les logs en temps réel
+docker logs -f flask_app
+
+# Voir les dernières 100 lignes
+docker logs --tail 100 flask_app
+```
+
+#### Logs d'audit (fichier audit.log)
+```bash
+# Accéder au conteneur
+docker exec -it flask_app bash
+
+# Voir les logs d'audit
+cat logs/audit.log
+
+# Suivre les logs d'audit en temps réel
+tail -f logs/audit.log
+
+# Voir les dernières 50 lignes
+tail -n 50 logs/audit.log
+```
+
+#### Logs de la base de données MySQL
+```bash
+# Voir les logs du conteneur MySQL
+docker logs mysql_db
+
+# Suivre les logs en temps réel
+docker logs -f mysql_db
+```
+
+#### Copier les logs depuis le conteneur
+```bash
+# Copier le fichier audit.log sur votre machine
+docker cp flask_app:/app/logs/audit.log ./audit.log
+```
+
+#### Format des logs d'audit
+Chaque ligne est un objet JSON avec la structure suivante :
+```json
+{
+  "timestamp": "2024-01-15T10:30:45Z",
+  "event_type": "LOGIN_ATTEMPT",
+  "user": "username",
+  "ip_address": "192.168.1.1",
+  "severity": "INFO",
+  "details": {
+    "route": "/login",
+    "success": true,
+    "tool": null,
+    "ua": "Mozilla/5.0..."
+  }
+}
+```
 
 ## 🧪 Développement
 
