@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Tableau de bord</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    </head>
+    <body>
+        <div class="dashboard-container">
+            <div class="dashboard-content">
+                <h1>Tableau de bord</h1>
+                <p>Bienvenue {{ username }} — roles: {{ roles }}</p>
+                <p><a href="#">Se déconnecter</a></p>
+                {% if 'Admin' in roles %}
+                    <p><a href="{{ url_for('admin_page') }}">Admin panel</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </body>
+</html>

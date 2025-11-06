@@ -1,0 +1,6 @@
+flask
+flask-mysqldb
+werkzeug
+flask-login
+bcrypt
+flask-limiter
